@@ -1,0 +1,1231 @@
+
+job
+  script
+    :livescript(bare='true' header='\n')
+      ``// Namespaces prelude START``
+      wsh = {};
+      native = {};
+      primitive = {};
+      ``// Namespaces prelude END``
+      ``// WLS dependency wsh.Shell``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\wsh\Shell.ls)``
+      wsh.Shell = do ->
+        new-shell = -> new ActiveXObject 'WScript.Shell'
+    
+        {
+          new-shell
+        }
+      ``// WLS dependency native.String``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\native\String.ls)``
+      native.String = do ->
+        char = -> String.from-char-code it
+    
+        #
+    
+        concat = (string, separator = '') -> string.join separator
+    
+        split = (string, separator = '') -> string.split separator
+    
+        #
+    
+        repeat = (string, count) -> new Array count + 1 .join string
+    
+        #
+    
+        trim-regex = /^[\s]+|[\s]+$/g
+    
+          # ^[\s]+ : ^ asserts the position at the start of the line
+          #        : \s matches any whitespace character one or more times (+)
+    
+          # | : acts as an alternatives separator
+          #   : allows the regex to match either the pattern before or the pattern after it
+    
+          # [\s]+$ : the $ symbol asserts the position at the end of the line
+    
+          # the regex matches both leading and trailing whitespace characters
+    
+        trim = (.replace trim-regex, '')
+    
+        #
+    
+        lower-case = (.to-lower-case!)
+        upper-case = (.to-upper-case!)
+    
+        #
+    
+        camel-regex = /[-_]+(.)?/g
+    
+          # [-_]+ : matches one or more occurrences of either a hyphen - or an underscore _
+          #       : the square brackets [] create a character set, and the + means one or more
+    
+          # (.)? : the parentheses () create a capturing group
+          #      : inside the group there is a dot . which matches any single character except a newline.
+          #      : the ? after the group makes it optional, meaning it can appear zero or one time
+    
+        camel-case = (.replace camel-regex, -> upper-case &1 ? '')
+    
+        #
+    
+        dash-lower-upper = (, lower, upper) -> "#{ lower }-#{ if upper.length > 1 then upper else lcase upper }"
+    
+        dash-upper = (, upper) -> if upper.length > 1 then "#upper-" else lower-case upper
+    
+        upper-lower-regex = /([^-A-Z])([A-Z]+)/g
+    
+        replace-upper-lower = (.replace upper-lower-regex, dash-lower-upper)
+    
+        upper-regex = /^([A-Z]+)/
+    
+        replace-upper = (.replace upper-regex, dash-upper)
+    
+        kebab-case = -> it |> replace-upper-lower |> replace-upper
+    
+        #
+    
+        capital-regex = /\b\w/g
+    
+          # \b : matches a position where a word boundary occurs
+          #    : it does not match an actual character, it identifies a position between characters
+          #    : matches the transition from a word character (such as letters, digits, underscores) to a non-word character
+          #    : matches the transition from a non-word character to a word-character
+    
+          # \w : represents a word character
+          #    : matches letters (both uppercase and lowercase), digits, underscores
+    
+          # together they match all word boundaries followed by word characters
+    
+        capital-case = (.replace capital-regex, upper-case)
+    
+        #
+    
+        words-regex = /[ ]+/
+    
+        string-as-words = ->
+    
+          switch it.length
+    
+            | 0 => []
+    
+            else it.split words-regex
+    
+        words-as-string = (.join ' ')
+    
+        #
+    
+        # https://en.wikipedia.org/wiki/C0_and_C1_control_codes
+    
+        c0-control-codes = { [ name, char-code ] for name, char-code in <[ nul soh stx etx eot enq ack bel bs ht lf vt ff cr so si dle dc1 dc2 dc3 dc4 nak syn etb can em sub esc fs gs rs us sp ]> }
+    
+        c1-control-codes = { [ name, char-code + 127 ] for name, char-code in <[ del pad hop bph nbh ind nel ssa esa hts htj vts pld plu ri ss2 ss3 dcs pu1 pu2 sts cch mw spa epa sos sgc sci csi st osc pm apc ]> }
+    
+        control-codes = {} <<< c0-control-codes <<< c1-control-codes
+    
+        control-chars = { [ (name), (char code) ] for name, code of control-codes }
+    
+        #
+    
+        affix = (stem, prefix = '', suffix = prefix) -> "#prefix#stem#suffix"
+    
+        prepend = (stem, prefix) -> affix stem, prefix, ''
+        append  = (stem, suffix) -> affix stem, '', suffix
+    
+        #
+    
+        quote-chars =
+    
+          single: "'"
+          double: '"'
+    
+        single-quotes = -> affix it, quote-chars.single
+        double-quotes = -> affix it, quote-chars.double
+    
+        parens = -> affix it, '(', ')'
+        braces = -> affix it, '{', '}'
+    
+        square-brackets = -> affix it, '[', ']'
+        angle-brackets  = -> affix it, '<', '>'
+    
+        #
+    
+        first-chars = (string, n = 1) -> string.slice 0, n
+        last-chars = (string, n = 1) -> string.slice -n
+    
+        #
+    
+        pad = (value, count, padding, fn) -> prefix = repeat padding, count ; prepend value, prefix |> fn
+    
+        padl = (value, count, padding = '0') -> pad value, count, padding, -> it `last` count
+        padr = (value, count, padding = ' ') -> pad value, count, padding, -> it `first` count
+    
+        #
+    
+        take-chars = (string, n) ->
+    
+          if n <= 0
+            string.slice 0, 0
+          else
+            string.slice 0, n
+    
+        drop-chars = (string, n) ->
+    
+          if n <= 0
+            string
+          else
+            string.slice n
+    
+        {
+          char, trim,
+          upper-case, lower-case,
+          camel-case, kebab-case, capital-case,
+          control-chars,
+          string-as-words, words-as-string,
+          affix, prepend, append,
+          single-quotes, double-quotes,
+          parens, braces, square-brackets, angle-brackets,
+          first-chars, last-chars,
+          padl, padr,
+          take-chars, drop-chars
+        }
+    
+      ``// WLS dependency native.Array``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\native\Array.ls)``
+      native.Array = do ->
+        { camel-case } = native.String ;
+        take-items = (array, n) ->
+    
+          if n <= 0
+            array.slice 0, 0
+          else
+            array.slice 0, n
+    
+        drop-items = (array, n) ->
+    
+          if n <= 0
+            array
+          else
+            array.slice n
+    
+        split-at = (array, n) -> [ (take-items array, n), (drop-items array, n) ]
+    
+        head-and-tail = -> it `split-at` 1
+    
+        trunk-and-root = -> it `split-at` (it.length - 1)
+    
+        first-item = (array) -> if array.length is 0 then void else array.0
+    
+        last-item = (array) -> if array.length is 0 then void else array[* - 1]
+    
+        array-as-object = (array) -> { [ (camel-case value), (value) ] for value in array }
+    
+        arrays-as-object = (names, values) -> { [ (name), (values[index]) ] for name, index in names }
+    
+        map = (items, fn) -> [ (fn item, index, items) for item, index in items ]
+    
+        {
+          take-items, drop-items,
+          split-at, head-and-tail, trunk-and-root,
+          first-item, last-item,
+          array-as-object, arrays-as-object,
+          map
+        }
+      ``// WLS dependency native.Type``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\native\Type.ls)``
+      native.Type = do ->
+        { trim, lower-case } = native.String ;
+        { array-as-object } = native.Array ;
+        type-name = (value) -> {} |> (.to-string) |> (.call value) |> (.slice 8, -1)
+    
+        sanitize = -> it |> trim |> lower-case
+    
+        is-a = (value, type) ->
+    
+          value-type = value |> type-name |> sanitize
+          type = type |> sanitize
+    
+          value-type is type
+    
+        isnt-a = (value, type) -> not (value `is-a` type)
+    
+        #
+    
+        n = native-type = array-as-object <[ String Object Number Array Arguments Boolean Function Undefined Error ]>
+    
+        #
+    
+        {
+          type-name, native-type,
+          is-a, isnt-a
+        }
+    
+      ``// WLS dependency primitive.Type``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\primitive\Type.ls)``
+      primitive.Type = do ->
+        { type-name: native-type-name, native-type: n } = native.Type ;
+        { array-as-object } = native.Array ;
+        { trim, lower-case } = native.String ;
+        p = primitive-type = array-as-object <[ Str Null Fieldset Num NaN List Bool Fn Void Tuple ]>
+    
+        type-name = (value) ->
+    
+          switch native-type-name value
+    
+            | n.String => p.Str
+            | n.Object, n.Error =>
+    
+              switch value
+                | null => p.Null
+                | undefined => p.Void
+                else p.Fieldset
+    
+            | n.Number =>
+    
+              switch value
+                | value => p.Num
+                else p.NaN
+    
+            | n.Array, n.Arguments => p.List
+            | n.Boolean => p.Bool
+            | n.Function => p.Fn
+    
+            else that
+    
+        #
+    
+        type-descriptor-as-string = (descriptor) ->
+    
+          switch type-name descriptor
+    
+            | p.List => descriptor * ' '
+            else String descriptor
+    
+        type-error = (message) -> throw new Error "TypeError: #message"
+    
+        fails-to-be = (value, message) !-> type-error "Value [#{ type-name value }] #{ String value } must be #message"
+    
+        #
+    
+        sanitized = -> it |> trim |> lower-case
+    
+        is-a = (value, required-type-name) ->
+    
+          required-type-name `fails-to-be` p.Str \
+            if (sanitized type-name required-type-name) isnt (sanitized p.Str)
+    
+          required-type-name = sanitized required-type-name
+          value-type-name = sanitized type-name value
+    
+          value-type-name is required-type-name
+    
+        isnt-a = (value, required-type-name) -> not (value `is-a` required-type-name)
+    
+        #
+    
+        Type = (type-descriptor, value) ->
+    
+          required-type-name = type-descriptor |> type-descriptor-as-string
+    
+          value `fails-to-be` required-type-name \
+            unless value `is-a` required-type-name
+    
+          value
+    
+        #
+    
+        Either = (types-descriptor, value) ->
+    
+          types-descriptor = types-descriptor |> type-descriptor-as-string
+    
+          types = types-descriptor / ' '
+    
+          actual-type = void
+          value-type = type-name value
+    
+          for type in types
+    
+            if type is value-type
+              actual-type = type
+              break
+    
+          value `fails-to-be` "any of #{ types * ', ' }" \
+            unless actual-type isnt void
+    
+          value
+    
+        #
+    
+        Maybe = (type-descriptor, value) -> Either [ type-descriptor, p.Void ], value
+    
+        #
+    
+        Str = -> Type <[ Str ]> it
+        MaybeStr = -> Maybe <[ Str ]> it
+    
+        Fieldset = -> Type <[ Fieldset ]> it
+        MaybeFieldset = -> Maybe <[ Fieldset ]> it
+    
+        Num = -> Type <[ Num ]> it
+        MaybeNum = -> Maybe <[ Num ]> it
+    
+        List = -> Type <[ List ]> it
+        MaybeList = -> Maybe <[ List ]> it
+    
+        Bool = -> Type <[ Bool ]> it
+        MaybeBool = -> Maybe <[ Bool ]> it
+    
+        Fn = -> Type <[ Fn ]> it
+        MaybeFn = -> Maybe <[ Fn ]> it
+    
+        {
+          primitive-type,
+          type-name,
+          type-descriptor-as-string, type-error,
+          Type, Either, Maybe,
+          Str, MaybeStr, Num, MaybeNum, Bool, MaybeBool, Fn, MaybeFn,
+          Fieldset, MaybeFieldset, List, MaybeList,
+          is-a, isnt-a
+        }
+      ``// WLS dependency wsh.FileSystem``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\wsh\FileSystem.ls)``
+      wsh.FileSystem = do ->
+        { Str, Fieldset, Type } = primitive.Type ;
+        { first-chars, padl } = native.String ;
+        new-filesystem = -> new ActiveXObject 'Scripting.FileSystemObject'
+    
+        fs = new-filesystem!
+    
+        drive-exists = -> fs.DriveExists Str it
+        file-exists = -> fs.FileExists Str it
+        folder-exists = -> fs.FolderExists Str it
+    
+        build-path = (path, name) -> fs.BuildPath (Str path), (Str name)
+    
+        parent-folder = -> fs.GetParentFolderName Str it
+    
+        delete-file = -> fs.DeleteFile Str it
+        delete-folder = -> fs.DeleteFolder Str it
+    
+        new-folder = -> fs.GetFolder Str it
+    
+        new-folder-file = (folder-filepath, filename) -> new-folder (Str folder-filepath) |> (.Files Str filename)
+    
+        with-extension = (filepath, extension) ->
+    
+          Str filepath ; Str extension ;
+    
+          index = filepath.last-index-of '.'
+    
+          if index isnt -1
+    
+            "#{ first-chars filepath, index }.#extension"
+    
+        file-name = -> fs.GetFileName Str it
+    
+        filepath-as-file = (filepath) -> new-folder-file (parent-folder filepath), (file-name filepath)
+    
+        last-modified-as-ms = (filepath) -> filepath |> filepath-as-file |> (.DateLastModified * 1000)
+    
+        absolute-path = -> fs.GetAbsolutePathName Str it
+    
+        {
+          new-filesystem,
+          drive-exists, file-exists, folder-exists,
+          build-path, parent-folder,
+          delete-file, delete-folder,
+          new-folder, new-folder-file,
+          with-extension, file-name,
+          filepath-as-file,
+          last-modified-as-ms,
+          absolute-path
+        }
+      ``// WLS dependency wsh.TextStream``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\wsh\TextStream.ls)``
+      wsh.TextStream = do ->
+        { new-filesystem } = wsh.FileSystem ;
+        { Str, Num, Bool } = primitive.Type ;
+        fs = new-filesystem!
+    
+        io-mode = reading: 1, writing: 2, appending: 8
+    
+        new-textstream = (filepath, mode) -> new-filesystem!OpenTextFile (Str filepath), (Num mode)
+    
+        readable = -> new-textstream it, io-mode.reading
+    
+        writeable = (filepath, appending = no) -> new-textstream filepath, (if (Bool appending) then io-mode.appending else io-mode.writing)
+    
+        {
+          readable, writeable
+        }
+      ``// WLS dependency primitive.Text``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\primitive\Text.ls)``
+      primitive.Text = do ->
+        { Either, type-name, primitive-type: p, Str, List } = primitive.Type ;
+        { control-chars: { us, cr, lf, ff, vt } } = native.String ;
+        Text = !-> Either <[ Str List ]> it
+        MaybeText = !-> Either <[ Str List Void ]> it
+    
+        #
+    
+        crlf = "#cr#lf"
+    
+        #
+    
+        list-as-units = (list) -> List list ; list.join us
+    
+        units-as-list = (units) -> Str units ; units.split us
+    
+        #
+    
+        text-as-string = (text, separator = lf) ->
+    
+          Text text
+    
+          switch type-name text
+    
+            | p.List => text.join separator
+            else String text
+    
+        #
+    
+        text-as-units = (text) ->
+    
+          for line-separator in [ crlf, lf, cr, ff, vt ]
+    
+            loop
+    
+              break if (text.index-of line-separator) is -1
+    
+              text = text.replace line-separator, us
+    
+          text
+    
+        units-as-text = (units, line-separator = crlf) -> units |> units-as-list |> (.join line-separator)
+    
+        #
+    
+        text-as-lines = (text) -> text |> text-as-string |> text-as-units |> units-as-list
+    
+        lines-as-text = (lines, line-separator = crlf) -> (List lines) |> (.join line-separator)
+    
+        {
+          Text, MaybeText,
+          text-as-string,
+          text-as-lines, lines-as-text
+        }
+      ``// WLS dependency wsh.TextFile``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\wsh\TextFile.ls)``
+      wsh.TextFile = do ->
+        { readable, writeable } = wsh.TextStream ;
+        { text-as-lines, lines-as-text } = primitive.Text ;
+        use-stream = (stream, fn) ->
+    
+          try result = fn stream
+          catch => debug "wsh.TextFile.use-stream" ; debug e.message
+    
+          stream.Close!
+          result
+    
+        read = -> use-stream (readable it), (.ReadAll!)
+    
+        write = -> (filepath, content, appending = no) -> use-stream (writeable filepath, appending), (.Write content)
+    
+        append = (filepath, content) -> write filepath, content, yes
+    
+        read-lines = (filepath) -> read filepath |> text-as-lines
+    
+        write-lines = (filepath, lines) -> write filepath, (lines |> lines-as-text)
+    
+        append-lines = (filepath, lines) -> append filepath, (lines |> lines-as-text)
+    
+        {
+          read, write, append,
+          read-lines, write-lines, append-lines
+        }
+    
+    
+      ``// WLS dependency wsh.SpecialFolders``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\wsh\SpecialFolders.ls)``
+      wsh.SpecialFolders = do ->
+        { new-shell } = wsh.Shell ;
+        { new-filesystem } = wsh.FileSystem ;
+        { camel-case } = native.String ;
+        shell = new-shell!
+    
+        fs = new-filesystem!
+    
+        folder-spec =
+    
+          windows: 0
+          system: 1
+          temporary: 2
+    
+        temporary = fs.GetSpecialFolder folder-spec.temporary .Path
+    
+        get-special-folder = -> shell.SpecialFolders it
+    
+        special-folder-names = <[
+          public-desktop start-menu programs startup
+          desktop roaming roaming-printers roaming-templates
+          fonts
+          roaming-network
+          user-desktop
+          roaming-start-menu
+          roaming-sendto
+          roaming-recent
+          roaming-startup
+          user-favorites user-documents
+          roaming-programs
+        ]>
+    
+        special-folders = { [ (camel-case name), (get-special-folder index) ] for name, index in special-folder-names }
+    
+        {
+          public-desktop, start-menu, programs, startup, desktop, roaming, roaming-printers, roaming-templates,
+          fonts, roaming-network, user-desktop, roaming-start-menu, roaming-sendto, roaming-recent, roaming-startup,
+          user-favorites, user-documents, roaming-programs
+        } = special-folders
+    
+        shell = new ActiveXObject 'Shell.Application'
+    
+        namespace = -> shell.Namespace it
+    
+        shell-folder-names = <[
+          user-desktop
+          internet
+          user-roaming-programs
+          control-panel
+          printers
+          user-documents
+          user-favorites
+          user-roaming-startup
+          user-roaming-recent
+          user-roaming-sendto
+          recycle-bin
+          user-roaming-start-menu
+          unknown1
+          user-music
+          user-videos
+          unknown2
+          user-desktop
+          this-pc
+          network
+          network-shortcuts
+          fonts
+          user-roaming-templates
+          program-data-start-menu
+          program-data-programs
+          program-data-startup
+          user-desktop
+          user-roaming
+          user-roaming-printer-shortcuts
+          user-local
+          user-roaming-startup
+          program-data-startup
+          user-favorites
+          inet-cache inet-cookies
+          history
+          program-data
+          windows
+          system32
+          program-files
+          user-pictures
+          user-profile
+          syswow64
+          program-files-x86
+          common-files
+          common-files-x86
+          program-data-templates
+          public-documents
+          user-administrative-tools
+          user-roaming-administrative-tools
+        ]>
+    
+        namespace-path = -> namespace it .Self.Path
+    
+        shell-special-folders = {}
+    
+        for name, index in shell-folder-names
+    
+          path = void
+    
+          try path = namespace-path index
+    
+          shell-special-folders[name] = path
+    
+        {
+          internet, control-panel, printers,
+          recycle-bin,
+          user-music, user-videos,
+          this-pc, network,
+          programdata-start-menu, program-data-programs, program-data-startup,
+          appdata-local,
+          programdata-startup,
+          inet-cache, inet-cookies, history,
+          program-data,
+          windows,
+          system32,
+          program-files,
+          user-pictures,
+          syswow64,
+          program-files-x86,
+          common-files,
+          common-filex-x86,
+          programdata-templates,
+          public-documents,
+          user-administrative-tools,
+          user-roaming-administrative-tools
+        } = shell-special-folders
+    
+        {
+          get-special-folder, special-folder-names,
+          special-folders,
+    
+          temporary,
+    
+          public-desktop, start-menu, programs, startup, desktop, roaming, roaming-printers, roaming-templates,
+          fonts, roaming-network, user-desktop, roaming-start-menu, roaming-sendto, roaming-recent, roaming-startup,
+          user-favorites, user-documents, roaming-programs,
+    
+          internet, control-panel, printers,
+          recycle-bin,
+          user-music, user-videos,
+          this-pc, network,
+          programdata-start-menu, program-data-programs, program-data-startup,
+          appdata-local,
+          programdata-startup,
+          inet-cache, inet-cookies, history,
+          program-data,
+          windows,
+          system32,
+          program-files,
+          user-pictures,
+          syswow64,
+          program-files-x86,
+          common-files,
+          common-filex-x86,
+          programdata-templates,
+          public-documents,
+          user-administrative-tools,
+          user-roaming-administrative-tools
+        }
+      ``// WLS dependency wsh.IO``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\wsh\IO.ls)``
+      wsh.IO = do ->
+        { control-chars: { lf } } = native.String ;
+        { new-shell } = wsh.Shell ;
+        stdin = -> WScript.StdIn.ReadAll!
+    
+        #
+    
+        [ stdout, stderr ] = do ->
+    
+          writer = (suffix) ->
+    
+            -> WScript["Std#suffix"].Write [ (arg) for arg in arguments ] * ' '
+    
+          [ (writer suffix) for suffix in <[ Out Err ]> ]
+    
+        #
+    
+        writers = (write) ->
+    
+          * -> write lf ; write ...
+            -> write ... ; write lf
+    
+        [ lnout, outln ] = writers stdout
+        [ lnerr, errln ] = writers stderr
+    
+        #
+    
+        debug = -> new-shell!Run "%tools-path%\\ods\\ods.exe #{ [ (arg) for arg in arguments ] * ' ' }", 0, no
+    
+        {
+          stdin,
+          stdout, stderr,
+          lnout, outln,
+          lnerr, errln,
+          debug
+        }
+      ``// WLS dependency wsh.TempFile``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\wsh\TempFile.ls)``
+      wsh.TempFile = do ->
+        { read } = wsh.TextFile ;
+        { temporary } = wsh.SpecialFolders ;
+        { new-filesystem, build-path, delete-file } = wsh.FileSystem ;
+        { debug } = wsh.IO ;
+        fs = new-filesystem!
+    
+        new-tempfile = ->
+    
+          filepath = build-path temporary, fs.GetTempName!
+    
+          filename: filepath
+    
+          consume: ->
+    
+            try content = read filepath ; delete-file filepath
+            catch => debug "wsh.TempFile.new-tempfile.consume #{ @filename }" ; debug e.message
+    
+            content
+    
+        {
+          new-tempfile
+        }
+      ``// WLS dependency wsh.Process``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\wsh\Process.ls)``
+      wsh.Process = do ->
+        { new-shell } = wsh.Shell ;
+        { new-tempfile } = wsh.TempFile ;
+        { Str, Num, Bool, MaybeStr } = primitive.Type ;
+        { text-as-string } = primitive.Text ;
+        { double-quotes } = native.String ;
+        { debug } = wsh.IO ;
+        { read } = wsh.TextFile ;
+        { file-exists } = wsh.FileSystem ;
+        window-behaviors =
+    
+          hide-and-activate-another: 0
+    
+        run = (command, working-folder, window-behavior = window-behaviors.hide-and-activate-another, synchronous = yes) ->
+    
+          Str command ; MaybeStr working-folder ; Num window-behavior ; Bool synchronous
+    
+          files = [ (new-tempfile!) for index to 1 ]
+    
+          [ out, err ] = files
+    
+          actual-command = "%comspec% /c #command > #{ double-quotes out.filename } 2> #{ double-quotes err.filename }"
+    
+          shell = new-shell!
+    
+          try
+    
+            shell.CurrentDirectory = working-folder \
+              if working-folder isnt void
+    
+            errorlevel = shell.Run actual-command, window-behavior, synchronous
+    
+          catch
+    
+            message =
+    
+              * "wsh.Process.Run #actual-command"
+                e.message
+              |> text-as-string
+    
+            throw new Error message
+    
+          if errorlevel isnt 0
+    
+            debug "wsh.Process.run with errorlevel #errorlevel"
+            debug "wsh.Process.run #actual-command"
+    
+          [ output, error ] = [ (file.consume!) for file in files ]
+    
+          { command, actual-command, working-folder, output, error, errorlevel }
+    
+        {
+          run
+        }
+      ``// WLS dependency primitive.Text``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\primitive\Text.ls)``
+      primitive.Text = do ->
+        { Either, type-name, primitive-type: p, Str, List } = primitive.Type ;
+        { control-chars: { us, cr, lf, ff, vt } } = native.String ;
+        Text = !-> Either <[ Str List ]> it
+        MaybeText = !-> Either <[ Str List Void ]> it
+    
+        #
+    
+        crlf = "#cr#lf"
+    
+        #
+    
+        list-as-units = (list) -> List list ; list.join us
+    
+        units-as-list = (units) -> Str units ; units.split us
+    
+        #
+    
+        text-as-string = (text, separator = lf) ->
+    
+          Text text
+    
+          switch type-name text
+    
+            | p.List => text.join separator
+            else String text
+    
+        #
+    
+        text-as-units = (text) ->
+    
+          for line-separator in [ crlf, lf, cr, ff, vt ]
+    
+            loop
+    
+              break if (text.index-of line-separator) is -1
+    
+              text = text.replace line-separator, us
+    
+          text
+    
+        units-as-text = (units, line-separator = crlf) -> units |> units-as-list |> (.join line-separator)
+    
+        #
+    
+        text-as-lines = (text) -> text |> text-as-string |> text-as-units |> units-as-list
+    
+        lines-as-text = (lines, line-separator = crlf) -> (List lines) |> (.join line-separator)
+    
+        {
+          Text, MaybeText,
+          text-as-string,
+          text-as-lines, lines-as-text
+        }
+      ``// WLS dependency wsh.FileSystem``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\wsh\FileSystem.ls)``
+      wsh.FileSystem = do ->
+        { Str, Fieldset, Type } = primitive.Type ;
+        { first-chars, padl } = native.String ;
+        new-filesystem = -> new ActiveXObject 'Scripting.FileSystemObject'
+    
+        fs = new-filesystem!
+    
+        drive-exists = -> fs.DriveExists Str it
+        file-exists = -> fs.FileExists Str it
+        folder-exists = -> fs.FolderExists Str it
+    
+        build-path = (path, name) -> fs.BuildPath (Str path), (Str name)
+    
+        parent-folder = -> fs.GetParentFolderName Str it
+    
+        delete-file = -> fs.DeleteFile Str it
+        delete-folder = -> fs.DeleteFolder Str it
+    
+        new-folder = -> fs.GetFolder Str it
+    
+        new-folder-file = (folder-filepath, filename) -> new-folder (Str folder-filepath) |> (.Files Str filename)
+    
+        with-extension = (filepath, extension) ->
+    
+          Str filepath ; Str extension ;
+    
+          index = filepath.last-index-of '.'
+    
+          if index isnt -1
+    
+            "#{ first-chars filepath, index }.#extension"
+    
+        file-name = -> fs.GetFileName Str it
+    
+        filepath-as-file = (filepath) -> new-folder-file (parent-folder filepath), (file-name filepath)
+    
+        last-modified-as-ms = (filepath) -> filepath |> filepath-as-file |> (.DateLastModified * 1000)
+    
+        absolute-path = -> fs.GetAbsolutePathName Str it
+    
+        {
+          new-filesystem,
+          drive-exists, file-exists, folder-exists,
+          build-path, parent-folder,
+          delete-file, delete-folder,
+          new-folder, new-folder-file,
+          with-extension, file-name,
+          filepath-as-file,
+          last-modified-as-ms,
+          absolute-path
+        }
+      ``// WLS dependency wsh.IO``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\wsh\IO.ls)``
+      wsh.IO = do ->
+        { control-chars: { lf } } = native.String ;
+        { new-shell } = wsh.Shell ;
+        stdin = -> WScript.StdIn.ReadAll!
+    
+        #
+    
+        [ stdout, stderr ] = do ->
+    
+          writer = (suffix) ->
+    
+            -> WScript["Std#suffix"].Write [ (arg) for arg in arguments ] * ' '
+    
+          [ (writer suffix) for suffix in <[ Out Err ]> ]
+    
+        #
+    
+        writers = (write) ->
+    
+          * -> write lf ; write ...
+            -> write ... ; write lf
+    
+        [ lnout, outln ] = writers stdout
+        [ lnerr, errln ] = writers stderr
+    
+        #
+    
+        debug = -> new-shell!Run "%tools-path%\\ods\\ods.exe #{ [ (arg) for arg in arguments ] * ' ' }", 0, no
+    
+        {
+          stdin,
+          stdout, stderr,
+          lnout, outln,
+          lnerr, errln,
+          debug
+        }
+      ``// WLS dependency native.String``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\native\String.ls)``
+      native.String = do ->
+        char = -> String.from-char-code it
+    
+        #
+    
+        concat = (string, separator = '') -> string.join separator
+    
+        split = (string, separator = '') -> string.split separator
+    
+        #
+    
+        repeat = (string, count) -> new Array count + 1 .join string
+    
+        #
+    
+        trim-regex = /^[\s]+|[\s]+$/g
+    
+          # ^[\s]+ : ^ asserts the position at the start of the line
+          #        : \s matches any whitespace character one or more times (+)
+    
+          # | : acts as an alternatives separator
+          #   : allows the regex to match either the pattern before or the pattern after it
+    
+          # [\s]+$ : the $ symbol asserts the position at the end of the line
+    
+          # the regex matches both leading and trailing whitespace characters
+    
+        trim = (.replace trim-regex, '')
+    
+        #
+    
+        lower-case = (.to-lower-case!)
+        upper-case = (.to-upper-case!)
+    
+        #
+    
+        camel-regex = /[-_]+(.)?/g
+    
+          # [-_]+ : matches one or more occurrences of either a hyphen - or an underscore _
+          #       : the square brackets [] create a character set, and the + means one or more
+    
+          # (.)? : the parentheses () create a capturing group
+          #      : inside the group there is a dot . which matches any single character except a newline.
+          #      : the ? after the group makes it optional, meaning it can appear zero or one time
+    
+        camel-case = (.replace camel-regex, -> upper-case &1 ? '')
+    
+        #
+    
+        dash-lower-upper = (, lower, upper) -> "#{ lower }-#{ if upper.length > 1 then upper else lcase upper }"
+    
+        dash-upper = (, upper) -> if upper.length > 1 then "#upper-" else lower-case upper
+    
+        upper-lower-regex = /([^-A-Z])([A-Z]+)/g
+    
+        replace-upper-lower = (.replace upper-lower-regex, dash-lower-upper)
+    
+        upper-regex = /^([A-Z]+)/
+    
+        replace-upper = (.replace upper-regex, dash-upper)
+    
+        kebab-case = -> it |> replace-upper-lower |> replace-upper
+    
+        #
+    
+        capital-regex = /\b\w/g
+    
+          # \b : matches a position where a word boundary occurs
+          #    : it does not match an actual character, it identifies a position between characters
+          #    : matches the transition from a word character (such as letters, digits, underscores) to a non-word character
+          #    : matches the transition from a non-word character to a word-character
+    
+          # \w : represents a word character
+          #    : matches letters (both uppercase and lowercase), digits, underscores
+    
+          # together they match all word boundaries followed by word characters
+    
+        capital-case = (.replace capital-regex, upper-case)
+    
+        #
+    
+        words-regex = /[ ]+/
+    
+        string-as-words = ->
+    
+          switch it.length
+    
+            | 0 => []
+    
+            else it.split words-regex
+    
+        words-as-string = (.join ' ')
+    
+        #
+    
+        # https://en.wikipedia.org/wiki/C0_and_C1_control_codes
+    
+        c0-control-codes = { [ name, char-code ] for name, char-code in <[ nul soh stx etx eot enq ack bel bs ht lf vt ff cr so si dle dc1 dc2 dc3 dc4 nak syn etb can em sub esc fs gs rs us sp ]> }
+    
+        c1-control-codes = { [ name, char-code + 127 ] for name, char-code in <[ del pad hop bph nbh ind nel ssa esa hts htj vts pld plu ri ss2 ss3 dcs pu1 pu2 sts cch mw spa epa sos sgc sci csi st osc pm apc ]> }
+    
+        control-codes = {} <<< c0-control-codes <<< c1-control-codes
+    
+        control-chars = { [ (name), (char code) ] for name, code of control-codes }
+    
+        #
+    
+        affix = (stem, prefix = '', suffix = prefix) -> "#prefix#stem#suffix"
+    
+        prepend = (stem, prefix) -> affix stem, prefix, ''
+        append  = (stem, suffix) -> affix stem, '', suffix
+    
+        #
+    
+        quote-chars =
+    
+          single: "'"
+          double: '"'
+    
+        single-quotes = -> affix it, quote-chars.single
+        double-quotes = -> affix it, quote-chars.double
+    
+        parens = -> affix it, '(', ')'
+        braces = -> affix it, '{', '}'
+    
+        square-brackets = -> affix it, '[', ']'
+        angle-brackets  = -> affix it, '<', '>'
+    
+        #
+    
+        first-chars = (string, n = 1) -> string.slice 0, n
+        last-chars = (string, n = 1) -> string.slice -n
+    
+        #
+    
+        pad = (value, count, padding, fn) -> prefix = repeat padding, count ; prepend value, prefix |> fn
+    
+        padl = (value, count, padding = '0') -> pad value, count, padding, -> it `last` count
+        padr = (value, count, padding = ' ') -> pad value, count, padding, -> it `first` count
+    
+        #
+    
+        take-chars = (string, n) ->
+    
+          if n <= 0
+            string.slice 0, 0
+          else
+            string.slice 0, n
+    
+        drop-chars = (string, n) ->
+    
+          if n <= 0
+            string
+          else
+            string.slice n
+    
+        {
+          char, trim,
+          upper-case, lower-case,
+          camel-case, kebab-case, capital-case,
+          control-chars,
+          string-as-words, words-as-string,
+          affix, prepend, append,
+          single-quotes, double-quotes,
+          parens, braces, square-brackets, angle-brackets,
+          first-chars, last-chars,
+          padl, padr,
+          take-chars, drop-chars
+        }
+    
+      ``// WLS dependency wsh.Script``
+      ``// (c:\Users\Public\Public Scripts\wls\0.0.6\wsh\Script.ls)``
+      wsh.Script = do ->
+        { Num } = primitive.Type ;
+        { parent-folder } = wsh.FileSystem ;
+        { errln } = wsh.IO ;
+        WScript
+    
+          script-name = ..ScriptName
+          script-full-name = ..ScriptFullName
+    
+          script-folder = parent-folder script-full-name
+    
+          exit = (errorlevel = 0) !-> ..Quit Num errorlevel
+    
+          sleep = (seconds = 1) !-> ..Sleep (Num seconds) * 1000
+    
+          usage-lines = (args, lines = []) ->
+    
+            * "Usage:"
+              ""
+              "#script-name #args"
+    
+            |> (++ lines)
+    
+          fail-lines = (message-lines, errorlevel = 1) ->
+    
+            for line in message-lines => errln line
+            exit Num errorlevel
+    
+          fail = (message, errorlevel) -> fail-lines [ message ], errorlevel
+    
+        {
+          script-name, script-full-name, script-folder,
+          exit, sleep,
+          usage-lines,
+          fail, fail-lines
+        }
+      ``// WLS script 'wlsbuild.wls' (C:\Users\DanielR\Projects\wlsbuild-wls\0.0.0\wlsbuild.wls)``
+      { run } = wsh.Process ;
+      { text-as-lines } = primitive.Text ;
+      { with-extension, file-exists, last-modified-as-ms, absolute-path, build-path } = wsh.FileSystem ;
+      { outln } = wsh.IO ;
+      { trim } = native.String ;
+      { fail } = wsh.Script ;
+      wlsc = (wls-filepath) ->
+    
+        outln wls-filepath
+    
+        { output, errorlevel, error } = run "wlsc #wls-filepath"
+    
+        fail error, errorlevel \
+          if errorlevel isnt 0
+    
+      #
+    
+      { output, errorlevel } = run "dir /b /a-d *.wls"
+    
+      if errorlevel is 0
+    
+        current-folder = absolute-path '.'
+    
+        for wls-filename in text-as-lines output
+    
+          continue \
+            if (trim wls-filename) is ''
+    
+          wls-filepath = build-path current-folder, wls-filename
+    
+          wsf-filepath = wls-filepath `with-extension` 'wsf'
+    
+          if file-exists wsf-filepath
+    
+            wls-modified = last-modified-as-ms wls-filepath
+            wsf-modified = last-modified-as-ms wsf-filepath
+    
+            if wls-modified > wsf-modified
+    
+              wlsc wls-filepath
+    
+          else
+    
+            wlsc wls-filepath
+    
